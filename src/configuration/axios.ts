@@ -1,8 +1,7 @@
-import axios, { AxiosResponse, AxiosError } from 'axios';
-import {BASE_URL} from "@/core/hooks/useWeatherApi";
+import axios, {AxiosError, AxiosResponse} from 'axios';
 import {environment} from "@/configuration/environment";
-export const BASE_URL = 'https://api.weatherapi.com/v1';
 
+export const BASE_URL = 'https://api.weatherapi.com/v1';
 // Configurazione base dell'istanza Axios
 export const api = axios.create({
     baseURL: BASE_URL,

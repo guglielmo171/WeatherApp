@@ -33,4 +33,6 @@ export const ApiService = {
         );
     },
 
+//     todo compeltare intero servizio (service che contatta api esterna).
+
 }
