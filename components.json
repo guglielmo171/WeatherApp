@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": false,
+  // Non servono React Server Components in Vite
+  "tsx": true,
+  "tailwind": {
+    "config": "tailwind.config.js",
+    "css": "src/index.css",
+    // Percorso standard in Vite
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "./src/components",
+    "utils": "./src/lib/utils",
+    "ui": "./src/components/ui",
+    "lib": "./src/lib",
+    "hooks": "./src/hooks"
+  },
+  "iconLibrary": "lucide"
+}
