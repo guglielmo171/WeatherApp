@@ -3,11 +3,11 @@
 import React, {useState} from "react"
 import {WeatherIcons} from "@components/WeatherIcons"
 import {Link, useLoaderData} from "react-router-dom";
-import {Weather} from "@/types/dto/Weather";
-import {getShortWeekday, getTimeFromEpoch} from "@/utils/dates";
+import {Weather} from "@/core/types/dto/Weather";
+import {getShortWeekday, getTimeFromEpoch} from "@/core/utils/dates";
 import {Line, LineChart, ResponsiveContainer, Tooltip, TooltipProps, XAxis, YAxis} from "recharts";
 import {NameType} from "recharts/types/component/DefaultTooltipContent";
-import {getWeatherGradient} from "@/utils/weather";
+import {getWeatherGradient} from "@/core/utils/weather";
 
 
 const WeatherDetail: React.FC = () => {

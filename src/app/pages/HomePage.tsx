@@ -1,9 +1,9 @@
 import React, {useEffect, useState} from 'react';
-import {Weather} from "@/types/dto/Weather";
+import {Weather} from "@/core/types/dto/Weather";
 import WeatherCard from "@components/WeatherCard";
 import Autocomplete from "@ui/autocomplete";
-import useWeatherApi from "@/hooks/useWeatherApi";
-import {CitySearchResult} from "@/types/dto/City";
+import useWeatherApi from "@/core/hooks/useWeatherApi";
+import {CitySearchResult} from "@/core/types/dto/City";
 
 const initialKeySearch = localStorage.getItem('searchKey')
 interface FavoritesState {

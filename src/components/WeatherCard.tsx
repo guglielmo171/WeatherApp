@@ -5,9 +5,9 @@ import React, {useEffect, useState} from "react"
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "./ui/card"
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "./ui/tabs"
 import {WeatherIcons} from "./WeatherIcons"
-import {Weather} from "@/types/dto/Weather";
+import {Weather} from "@/core/types/dto/Weather";
 import {Link} from "react-router-dom";
-import {getShortWeekday} from "@/utils/dates";
+import {getShortWeekday} from "@/core/utils/dates";
 import {HeartFilledIcon, HeartIcon} from "@radix-ui/react-icons";
 import * as Toggle from "@radix-ui/react-toggle";
 interface WeatherCardProps {

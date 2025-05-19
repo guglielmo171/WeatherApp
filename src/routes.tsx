@@ -4,7 +4,7 @@ import NotFoundPage from "@/app/pages/NotFoundPage";
 import WeatherDetail from "@/app/pages/WeatherDetail";
 import React from "react";
 import {LoaderFunctionArgs} from "react-router-dom";
-import {WeatherService} from "@/services/WeatherService";
+import {WeatherService} from "@/core/services/WeatherService";
 
 const routes = [
     {

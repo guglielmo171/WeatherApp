@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Check, ChevronDown, Search} from "lucide-react";
-import useWeatherApi from "@/hooks/useWeatherApi";
+import useWeatherApi from "@/core/hooks/useWeatherApi";
 
 const Autocomplete = ({value,onChange}:React.InputHTMLAttributes<HTMLInputElement>) => {
    const {fetchCities}=useWeatherApi();

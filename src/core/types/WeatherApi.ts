@@ -1,5 +1,5 @@
-import {Weather} from "@/types/dto/Weather";
-import {CitySearchResult} from "@/types/dto/City";
+import {Weather} from "@/core/types/dto/Weather";
+import {CitySearchResult} from "@/core/types/dto/City";
 
 
 export interface WeatherAPI {

@@ -4,9 +4,8 @@
 // import {WeatherAPI} from "@/types/WeatherApi";
 // import {useCallback, useState} from "react";
 //
-import {WeatherAPI} from "@/types/WeatherApi";
+import {WeatherAPI} from "@/core/types/WeatherApi";
 
-export const BASE_URL = 'https://api.weatherapi.com/v1';
 // const {API_KEY}=environment;
 //
 //
@@ -78,10 +77,9 @@ export const BASE_URL = 'https://api.weatherapi.com/v1';
 
 
 import {useCallback, useMemo, useState} from "react";
-import {WeatherService} from "@/services/WeatherService";
-import {environment} from "@/configuration/environment";
-import {CitySearchResult} from "@/types/dto/City";
-import {Weather} from "@/types/dto/Weather";
+import {ApiService, WeatherService} from "@/core/services/WeatherService";
+import {CitySearchResult} from "@/core/types/dto/City";
+import {Weather} from "@/core/types/dto/Weather";
 
 const useWeatherApi = ():WeatherAPI =>{
         const [loading, setLoading] = useState(false);
@@ -93,7 +91,7 @@ const useWeatherApi = ():WeatherAPI =>{
             try{
                 setLoading(true);
                 setError(null);
-                return await service.fetchCities(query);
+                return await ApiService.searchCities(query);
             }catch (err) {
                 const apiError = err instanceof Error ? err : new Error('Unknown API error');
                 console.error('Failed to fetch cities:', apiError);
