@@ -4,7 +4,7 @@ import NotFoundPage from "@/app/pages/NotFoundPage";
 import WeatherDetail from "@/app/pages/WeatherDetail";
 import React from "react";
 import {LoaderFunctionArgs} from "react-router-dom";
-import {WeatherService} from "@/core/services/WeatherService";
+import {ApiService} from "@/core/services/WeatherService";
 
 const routes = [
     {
@@ -25,8 +25,7 @@ const routes = [
                     if (!params.cityUrl) {
                         throw new Response("City not found", {status: 404});
                     }
-                    const service = new WeatherService();
-                    return service.fetchWeatherForecast(params.cityUrl);
+                    return ApiService.fetchWeatherForecast(params.cityUrl);
                 }
             },
             {

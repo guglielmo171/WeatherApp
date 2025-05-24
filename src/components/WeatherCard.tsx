@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useEffect, useState} from "react"
+import React, {useEffect} from "react"
 
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "./ui/card"
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "./ui/tabs"
@@ -10,6 +10,7 @@ import {Link} from "react-router-dom";
 import {getShortWeekday} from "@/core/utils/dates";
 import {HeartFilledIcon, HeartIcon} from "@radix-ui/react-icons";
 import * as Toggle from "@radix-ui/react-toggle";
+
 interface WeatherCardProps {
     weatherData: Weather
     addFavourites:(weather:Weather)=>void
