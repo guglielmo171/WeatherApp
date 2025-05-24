@@ -1,28 +1,6 @@
 import {Weather} from "@/core/types/dto/Weather";
 import {CitySearchResult} from "@/core/types/dto/City";
-import {environment} from "@/configuration/environment";
-import {api, BASE_URL, handleApiCall} from "@/configuration/axios";
-
-export class WeatherService {
-    private baseUrl = BASE_URL;
-    private apiKey = environment.API_KEY;
-
-
-    async fetchData<T>(url: string): Promise<T> {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(
-            `HTTP error! status: ${response.status}`
-        )
-        return response.json();
-    }
-
-    async fetchWeatherForecast(cityUrl: string): Promise<Weather> {
-        const path = `${this.baseUrl}/forecast.json?key=${this.apiKey}&q=${encodeURIComponent(cityUrl)}&days=5`;
-        let response = await this.fetchData<Weather>(path)
-        response = {...response, url_city: cityUrl}
-        return response;
-    }
-}
+import {api, handleApiCall} from "@/configuration/axios";
 
 export const ApiService = {
     searchCities: async (query: string): Promise<CitySearchResult[]> => {
@@ -32,7 +10,20 @@ export const ApiService = {
             })
         );
     },
+    fetchWeatherForecast: async (cityUrl: string): Promise<Weather> =>{
+        const response= await handleApiCall(
+            ()=> api.get('/forecast.json',{
+                params: {
+                    q: encodeURIComponent(cityUrl),
+                    days: 5
+                }
+            })
+        );
+        return {
+            ...response,
+            url_city:cityUrl
+        }
+    }
 
-//     todo compeltare intero servizio (service che contatta api esterna).
 
 }
