@@ -4,6 +4,8 @@ import WeatherCard from "@components/WeatherCard";
 import Autocomplete from "@ui/autocomplete";
 import useWeatherApi from "@/core/hooks/useWeatherApi";
 import {CitySearchResult} from "@/core/types/dto/City";
+import {useQuery} from "@tanstack/react-query";
+import {ApiService} from "@/core/services/WeatherService";
 
 const initialKeySearch = localStorage.getItem('searchKey')
 interface FavoritesState {
@@ -12,7 +14,7 @@ interface FavoritesState {
 }
 
 const HomePage = () => {
-    const {fetchCities,fetchWeather:fetchWeatherForecast,loading,error}=useWeatherApi();
+    const {fetchCities,fetchWeather:fetchWeatherForecast}=useWeatherApi();
 
     const [searchQuery, setSearchQuery] = useState(initialKeySearch || 'Italy');
 
@@ -23,6 +25,19 @@ const HomePage = () => {
         ids: [],
         weatherData: []
     })
+
+    // useQuery si attiva solo quando searchQuery ha valore
+    const {
+        data,
+        isLoading,
+        error,
+        isFetching
+    } = useQuery<CitySearchResult[]>({
+        queryKey: ['cities', searchQuery], // Cache key
+        queryFn: () => ApiService.searchCities(searchQuery),
+        enabled: searchQuery.length >= 2, // Esegui solo con almeno 2 caratteri
+        staleTime: 30000, // 30 secondi cache
+    });
 
     useEffect(() => {
         (async () => {
@@ -123,8 +138,9 @@ const HomePage = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cerca una città..."
             />
-
-            {loading && <p className="mt-2">Caricamento...</p>}
+            {/* Loading state */}
+            {isLoading && <p className="mt-2">Caricamento Cities...</p>}
+            {isFetching && !isLoading && <p className="mt-2">Updating Cities...</p>}
             {error && <p className="mt-2 text-red-500">{error.message}</p>}
 
             <div className="container mx-auto py-4">
@@ -139,7 +155,15 @@ const HomePage = () => {
                 {favorites.weatherData.length > 0 && favorites.weatherData.map((city, index) => (
                         <WeatherCard key={index} weatherData={city} addFavourites={toggleFavorite} isFavorite={favorites.ids.includes(city.url_city)} />
                 ))}
+
+                    {/* Empty state */}
+                    {data && data.length === 0 && searchQuery.length >= 2 && (
+                        <div>No cities found for "{searchQuery}"</div>
+                    )}
+
+
                 </div>
+
 
                 {!(favorites.weatherData.length > 0) &&  <div className="py-6 text-center text-sm text-gray-500">
                     Nessun risultato trovato
