@@ -2,8 +2,9 @@ import React, {useEffect, useState} from 'react';
 import {Weather} from "@/core/types/dto/Weather";
 import WeatherCard from "@components/WeatherCard";
 import Autocomplete from "@ui/autocomplete";
-import useWeatherApi from "@/core/hooks/useWeatherApi";
 import {CitySearchResult} from "@/core/types/dto/City";
+import {useQueries, useQuery} from "@tanstack/react-query";
+import {ApiService} from "@/core/services/WeatherService";
 
 const initialKeySearch = localStorage.getItem('searchKey')
 interface FavoritesState {
@@ -12,59 +13,104 @@ interface FavoritesState {
 }
 
 const HomePage = () => {
-    const {fetchCities,fetchWeather:fetchWeatherForecast,loading,error}=useWeatherApi();
 
     const [searchQuery, setSearchQuery] = useState(initialKeySearch || 'Italy');
-
-    const [cities, setCities] = useState<CitySearchResult[]>([])
-    const [weatherData, setWeatherData] = useState<Weather[]>([]);
-    // const [ip, setIp] = useState("")
+    const [debounceSearch, setDebounceSearch] = useState(searchQuery)
     const [favorites, setFavorites] = useState<FavoritesState>({
         ids: [],
         weatherData: []
-    })
+    });
 
+    // Debouncing per searchQuery
     useEffect(() => {
-        (async () => {
-            // setIp(await getUserIP());
-            const storedFavorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+        const timer = setTimeout(() => {
+            setDebounceSearch(searchQuery);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // 1. Query per cercare città
+    const {
+        data:cities,
+        isLoading: citiesLoading,
+        error: citiesError,
+        isFetching: citiesFetching
+    } = useQuery<CitySearchResult[]>({
+        queryKey: ['cities', debounceSearch],
+        queryFn: () => ApiService.searchCities(debounceSearch),
+        enabled: debounceSearch.length >= 2,
+        staleTime: 30000,
+        select: (data) => data.slice(0, 5) // Limita a 5 risultati
+    });
+
+    // 2. Query parallele per weather delle città trovate
+    const weatherQueries = useQueries({
+        queries: (cities || []).map(city => ({
+            queryKey: ['weather', city.url],
+            queryFn: () => ApiService.fetchWeatherForecast(city.url),
+            staleTime: 10 * 60 * 1000, // 10 minuti per weather
+            enabled: !!city.url
+        }))
+    });
+
+    // 3. Query per caricare favorites al mount
+    const {
+        data: storedFavoriteIds
+    } = useQuery<string[]>({
+        queryKey: ['favorites', 'ids'],
+        queryFn: () => {
+            const stored = localStorage.getItem("favorites");
+            return Promise.resolve(JSON.parse(stored || "[]"));
+        },
+        staleTime: Infinity, // Non rifare questa query
+    });
+
+    // 4. Query parallele per weather dei favoriti
+    const favoriteWeatherQueries = useQueries({
+        queries: (favorites.ids || []).map(cityUrl => ({
+            queryKey: ['weather', cityUrl],
+            queryFn: () => ApiService.fetchWeatherForecast(cityUrl),
+            staleTime: 10 * 60 * 1000,
+            enabled: !!cityUrl
+        }))
+    });
+
+    // Sincronizza favorites con localStorage
+    useEffect(() => {
+        if (storedFavoriteIds) {
             setFavorites(prev => ({
                 ...prev,
-                ids: storedFavorites
+                ids: storedFavoriteIds
             }));
+        }
+    }, [storedFavoriteIds]);
 
-            // Carica i dati meteo (se necessario)
-            if (storedFavorites.length > 0) {
-                const weatherPromises = storedFavorites.map((id: string) =>
-                    fetchWeatherForecast(id)
-                );
-                const weatherResults = await Promise.all(weatherPromises);
-                setFavorites(prev => ({
-                    ...prev,
-                    weatherData: weatherResults
-                }));
-            }
-        })()
-
-    }, []);
-
-    // Trigger search state
+    // Aggiorna weatherData dei favoriti quando le query si completano
     useEffect(() => {
-        if (searchQuery.length < 3) return; // Cerca solo dopo 3+ caratteri
-        localStorage.setItem('searchKey', searchQuery)
-        const timer = setTimeout(async () => {
-            try {
-                const cities = await fetchCities(searchQuery);
-                // console.log('cities', cities)
-                setCities(cities.slice(0, 5)); // Limita a 5 risultati
-            } catch (err) {
-                const apiError = err instanceof Error ? err : new Error('Unknown  error');
-                throw apiError;
-            }
-        }, 500); // Debounce di 500ms
+        const favoriteWeatherData = favoriteWeatherQueries
+            .map(query => query.data)
+            .filter((data): data is Weather => !!data);
 
-        return () => clearTimeout(timer); // Cleanup
-    }, [searchQuery]);
+        if (favoriteWeatherData.length > 0) {
+            setFavorites(prev => ({
+                ...prev,
+                weatherData: favoriteWeatherData
+            }));
+        }
+    }, [favoriteWeatherQueries]);
+
+    // Salva searchQuery in localStorage
+    useEffect(() => {
+        if (debounceSearch.length >= 2) {
+            localStorage.setItem('searchKey', debounceSearch);
+        }
+    }, [debounceSearch]);
+
+    // ✅ Calcola weatherData direttamente nel render
+    const favoriteWeatherData = favoriteWeatherQueries
+        .map(query => query.data)
+        .filter((data): data is Weather => !!data);
+
 
     const toggleFavorite = async (weather:Weather)=>{
         // if (favorites.ids.some(id => id === weather.url_city)) return;
@@ -77,42 +123,22 @@ const HomePage = () => {
         // Aggiorna sessionStorage
         localStorage.setItem("favorites", JSON.stringify(updatedIds));
 
-
-        // Aggiorna lo stato in un'unica operazione
-        try{
-            const weatherData= await fetchWeatherForecast(weather.url_city);
-            setFavorites(prev => ({
-                ids: updatedIds,
-                weatherData: isPresent
-                    ? prev.weatherData.filter(w => w.url_city !== weather.url_city)
-                    : [...prev.weatherData, weatherData]
-            }));
-        }catch (e) {
-            if (e instanceof Error) {
-            console.error("Failed to fetch favorite weather:", error);
-            }else{
-                console.error("An error occurred");
-            }
-            // Fallback: aggiorna solo gli ID se il fetch fallisce
-            setFavorites(prev => ({ ...prev, ids: updatedIds }));
-        }
+        // Aggiorna stato
+        setFavorites(prev => ({
+            ids: updatedIds,
+            weatherData: isPresent
+                ? prev.weatherData.filter(w => w.url_city !== weather.url_city)
+                : [...prev.weatherData, weather]
+        }));
     }
 
-    // Trigger state cities changes
-    useEffect(() => {
-        if (cities.length === 0) return;
-        (async () => {
-            try {
-                const weatherPromises = cities.map(city => fetchWeatherForecast(city.url));
-                const weatherResults = await Promise.all(weatherPromises);
-                // console.log('weatherResults', weatherResults)
-                setWeatherData(weatherResults);
-            } catch (err) {
-                const apiError = err instanceof Error ? err : new Error('Unknown API error');
-                throw apiError;
-            }
-        })()
-    }, [cities]);
+    // Estrai weatherData dalle query
+    const weatherData = weatherQueries
+        .map(query => query.data)
+        .filter((data): data is Weather => !!data);
+
+    const isLoadingWeather = weatherQueries.some(query => query.isLoading);
+    const hasWeatherError = weatherQueries.some(query => query.error);
 
     return (
         <div className="min-h-screen p-4 bg-gradient-to-b from-sky-50 to-blue-100">
@@ -124,26 +150,65 @@ const HomePage = () => {
                 placeholder="Cerca una città..."
             />
 
-            {loading && <p className="mt-2">Caricamento...</p>}
-            {error && <p className="mt-2 text-red-500">{error.message}</p>}
+            {/*Loading states*/}
+            {citiesLoading && <p className="mt-2">Caricamento citta ...</p>}
+            {citiesFetching && !citiesLoading && <p className="mt-2">Aggiornamento citta ...</p>}
+
+            {isLoadingWeather && <p className="mt-2">Caricamento meteo...</p>}
+
+            {/* Error states */}
+            {citiesError && (
+                <p className="mt-2 text-red-500">
+                    Errore nel caricamento città: {citiesError.message}
+                </p>
+            )}
+            {hasWeatherError && (
+                <p className="mt-2 text-red-500">
+                    Errore nel caricamento meteo
+                </p>
+            )}
+
 
             <div className="container mx-auto py-4">
+                {/* Risultati ricerca */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {weatherData.map((city, index) => (
-                            <WeatherCard isFavorite={favorites.ids.includes(city.url_city)} key={index} weatherData={city}  addFavourites={toggleFavorite}/>
+                            <WeatherCard
+                                isFavorite={favorites.ids.includes(city.url_city)}
+                                key={`${city.url_city}-${index}`}
+                                weatherData={city}
+                                addFavourites={toggleFavorite}
+                            />
                     ))}
                 </div>
 
+                {/* Empty state per ricerca */}
+                {cities && cities.length === 0 && debounceSearch.length >= 2 && (
+                    <div className="text-center py-4">
+                        Nessuna città trovata per "{debounceSearch}"
+                    </div>
+                )}
+
+                {/* Sezione Favoriti */}
                 <h1 className="text-3xl font-bold mb-8 text-blue-800 text-center py-12">Le Tue Città</h1>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {favorites.weatherData.length > 0 && favorites.weatherData.map((city, index) => (
-                        <WeatherCard key={index} weatherData={city} addFavourites={toggleFavorite} isFavorite={favorites.ids.includes(city.url_city)} />
-                ))}
+                    {favoriteWeatherData.length > 0 &&
+                        favoriteWeatherData.map((city, index) => (
+                        <WeatherCard
+                            key={`${city.url_city}-${index}`}
+                            weatherData={city}
+                            addFavourites={toggleFavorite}
+                            isFavorite={favorites.ids.includes(city.url_city)}
+                        />
+                    ))}
                 </div>
 
-                {!(favorites.weatherData.length > 0) &&  <div className="py-6 text-center text-sm text-gray-500">
-                    Nessun risultato trovato
-                </div>}
+                {/* Empty state per favoriti */}
+                {favoriteWeatherData.length === 0 && (
+                    <div className="py-6 text-center text-sm text-gray-500">
+                        Nessun preferito salvato
+                    </div>
+                )}
 
             </div>
         </div>

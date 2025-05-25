@@ -11,18 +11,20 @@ export const ApiService = {
         );
     },
     fetchWeatherForecast: async (cityUrl: string): Promise<Weather> =>{
-        const response= await handleApiCall(
-            ()=> api.get('/forecast.json',{
+        return handleApiCall(
+            ()=> api.get<Weather>('/forecast.json',{
                 params: {
                     q: encodeURIComponent(cityUrl),
                     days: 5
                 }
             })
-        );
-        return {
+        ).then(response=>({
             ...response,
             url_city:cityUrl
-        }
+        }))
+        // return {
+        //
+        // }
     }
 
 
