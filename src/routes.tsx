@@ -5,6 +5,7 @@ import WeatherDetail from "@/app/pages/WeatherDetail";
 import React from "react";
 import {LoaderFunctionArgs} from "react-router-dom";
 import {ApiService} from "@/core/services/WeatherService";
+import {queryClient} from "@/app/App";
 
 const routes = [
     {
@@ -19,13 +20,23 @@ const routes = [
                 path: 'forecastDetail/:cityUrl',
                 element: <WeatherDetail
                 />,
-                loader: ({params}: LoaderFunctionArgs) => {
+                loader:async  ({params}: LoaderFunctionArgs) => {
 
-                    // Puoi usare il loader per precaricare i dati
                     if (!params.cityUrl) {
                         throw new Response("City not found", {status: 404});
                     }
-                    return ApiService.fetchWeatherForecast(params.cityUrl);
+                    try {
+                        const weatherData = await queryClient.ensureQueryData({
+                            queryKey: ['weather', params.cityUrl],
+                            queryFn: () => ApiService.fetchWeatherForecast(params.cityUrl!),
+                            staleTime: 10 * 60 * 1000, // 10 minuti fresh
+                        });
+
+                        return weatherData;
+                    } catch (error) {
+                        console.error('Failed to load weather data:', error);
+                        throw new Response("Failed to load weather data", { status: 500 });
+                    }
                 }
             },
             {
