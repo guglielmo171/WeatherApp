@@ -149,9 +149,9 @@ const Autocomplete = ({value,onChange}:React.InputHTMLAttributes<HTMLInputElemen
                         </div>
 
                         {list.length > 0 ? (
-                            list.map((option) => (
+                            list.map((option,idx) => (
                                 <div
-                                    key={option}
+                                    key={idx}
                                     className={`relative cursor-pointer select-none py-2 pl-10 pr-4 hover:bg-blue-100 ${value === option ? 'bg-blue-50' : ''}`}
                                     onClick={() => {
                                         // setValue(option);

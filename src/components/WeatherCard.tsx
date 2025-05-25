@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useEffect} from "react"
+import React from "react"
 
 import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "./ui/card"
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "./ui/tabs"
@@ -22,10 +22,6 @@ interface WeatherCardProps {
 const WeatherCard: React.FC<WeatherCardProps> = ({weatherData,addFavourites,isFavorite:isFavourite}) => {
     const {Thermometer, Droplets, Wind, ArrowRight} = WeatherIcons
 
-
-    useEffect(() => {
-        console.log('weatherData', weatherData)
-    }, []);
     return (
         <Card className="w-full max-w-md mx-auto overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-blue-400 to-blue-600 text-white">
@@ -110,7 +106,7 @@ const WeatherCard: React.FC<WeatherCardProps> = ({weatherData,addFavourites,isFa
             </CardContent>
             <CardFooter className="bg-muted/50 px-6 py-3 text-xs text-center text-muted-foreground">
                 Ultimo aggiornamento: {new Date().toLocaleTimeString("it-IT")}
-                {isFavourite.toString()}
+                {/*{isFavourite.toString()}*/}
                 <Toggle.Root
                     pressed={isFavourite}
                     onPressedChange={()=>addFavourites(weatherData)}
